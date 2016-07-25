@@ -10,8 +10,8 @@ def cdata(text):
     :param text: The text to CDATA-rize.
     :return: The text wrapped in CDATA tags, with nested CDATA being escaped.
     """
-    escaped = text.replace(']]>', ']]>]]><![CDATA[')
-    return '<![CDATA[%s]]>' % escaped
+    escaped = text.replace(']]>', ']]&gt;')
+    return etree.CDATA(escaped)
 
 
 def add_unused_item_children(item):
@@ -127,7 +127,6 @@ def add_single_nested_data(item, group_name, element_name, text):
     :param element_name: The name of the element containing data.
     :param text: The text contained in a CDATA block inside the element called
         element_name
-    :param on_finish: Optional function to call once a page has been processed.
     :return The generated group element.
     """
     group = etree.SubElement(item, group_name)
@@ -136,24 +135,28 @@ def add_single_nested_data(item, group_name, element_name, text):
     return group
 
 
-def write_xml_page(output_dir, pages, offset, count, page_url_prefix, exclude,
+def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
                    on_finish=None):
+    """
+    Generates XML export files for a range of DokuWiki pages.
+
+    :param output_dir: Where to write XML files to. The directory must exist.
+    :param pages: The pages to write.
+    :param offset: Offset from the total pages at which pages are being
+        written.
+    :param count: Number of pages to write to the XML file.
+    :param page_url_prefix: The URL preceding the page's path, so a valid URL
+        would result from their concatenation.
+    :param on_finish: Optional function to call once a page has been processed.
+    :return:
+    """
     curr_pages = pages[offset:(offset + count)]
     unique_id = offset
     xml = etree.Element('findologic', version='1.0')
     items = etree.SubElement(xml, 'items', start=str(offset), count=str(count),
-                             total=str(len(curr_pages)))
+                             total=str(len(pages)))
 
     for page in curr_pages:
-        exclude_page = False
-        for excluded_path in exclude:
-            if page.path.starts_with(excluded_path):
-                exclude_page = True
-                break
-
-        if exclude_page:
-            continue
-
         create_item_for_page(items, unique_id, page, page_url_prefix)
         unique_id += 1
         if on_finish is not None:

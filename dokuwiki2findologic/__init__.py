@@ -20,9 +20,20 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
     """Exports DokuWiki content to the FINDOLOGIC XML output format."""
     dokuwiki = DokuWiki(dokuwiki_dir)
 
+    # Remove excluded pages.
+    pages = []
+    for path, page in dokuwiki.pages.items():
+        exclude_page = False
+        for exclude_path in exclude:
+            if path.startswith(exclude_path):
+                exclude_page = True
+                break
+        if not exclude_page:
+            pages.append(page)
+
     with click.progressbar(length=len(dokuwiki.pages),
                            label='Exporting') as bar:
-        for offset in range(0, len(dokuwiki.pages), pages_per_file):
-            write_xml_page(output_dir, list(dokuwiki.pages.values()), offset,
-                           pages_per_file, page_url_prefix, exclude,
+        for offset in range(0, len(pages), pages_per_file):
+            write_xml_page(output_dir, pages, offset,
+                           pages_per_file, page_url_prefix,
                            lambda identifier, _: bar.update(identifier))
