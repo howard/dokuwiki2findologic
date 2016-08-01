@@ -1,5 +1,7 @@
 # dokuwiki2findologic
 
+[![Travis CI](https://travis-ci.org/howard/dokuwiki2findologic.svg)](https://travis-ci.org/howard/dokuwiki2findologic)
+
 Command for converting DokuWiki pages to the
 [FINDOLOGIC XML format](https://github.com/findologic/xml-export).
 
