@@ -7,9 +7,18 @@ def cdata(text):
     Creates a CDATA string that is capable of containing other CDATA blocks that
     are escaped automatically.
 
+    Can handle bytes, strings and Nones gracefully, always resulting in a
+    CDATA'd string.
+
     :param text: The text to CDATA-rize.
     :return: The text wrapped in CDATA tags, with nested CDATA being escaped.
     """
+    # import code
+    # code.interact(local=locals())
+    if isinstance(text, bytes):
+        text = text.decode('utf-8')
+    elif text is None:
+        text = ''
     escaped = text.replace(']]>', ']]&gt;')
     return etree.CDATA(escaped)
 
@@ -25,7 +34,7 @@ def add_unused_item_children(item):
     etree.SubElement(item, 'allKeywords')
     etree.SubElement(item, 'salesFrequencies')
     etree.SubElement(item, 'usergroups')
-    add_single_nested_data(item, 'prices', 'price', 0.0)
+    add_single_nested_data(item, 'prices', 'price', str(0.0))
 
 
 def add_properties(item, properties):
@@ -41,9 +50,9 @@ def add_properties(item, properties):
     for key, value in properties.items():
         prop = etree.SubElement(props, 'property')
         prop_key = etree.SubElement(prop, 'key')
-        prop_key.text = cdata(str(key))
+        prop_key.text = cdata(key)
         prop_value = etree.SubElement(prop, 'value')
-        prop_value.text = cdata(str(value))
+        prop_value.text = cdata(value)
 
 
 def add_regular_item_values(item, page):
@@ -78,7 +87,7 @@ def add_child_with_text(parent, element_name, text):
     :return The generated element.
     """
     child = etree.SubElement(parent, element_name)
-    child.text = cdata(str(text))
+    child.text = cdata(text)
     return child
 
 
@@ -131,7 +140,7 @@ def add_single_nested_data(item, group_name, element_name, text):
     """
     group = etree.SubElement(item, group_name)
     element = etree.SubElement(group, element_name)
-    element.text = cdata(str(text))
+    element.text = cdata(text)
     return group
 
 
