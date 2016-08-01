@@ -58,7 +58,7 @@ def add_properties(item, properties):
 def add_regular_item_values(item, page):
     """
     Adds simple, regular values to the item, including the path of the page,
-    title, summary, full text, and creation date.
+    title, summary, full text, and update date.
 
     :param item: The item to modify.
     :param page: The page sourcing the data.
@@ -73,7 +73,9 @@ def add_regular_item_values(item, page):
 
     date_addeds = etree.SubElement(item, 'dateAddeds')
     if page.created_at is not None:
-        add_child_with_text(date_addeds, 'dateAdded', page.created_at)
+        # Use the update date instead of the creation date, so search results
+        # can be ordered by recency.
+        add_child_with_text(date_addeds, 'dateAdded', page.updated_at)
 
 
 def add_child_with_text(parent, element_name, text):
@@ -114,6 +116,7 @@ def create_item_for_page(parent, identifier, page, page_url_prefix):
     add_properties(item, {
         'creator': page.creator,
         'updated_at': page.updated_at,
+        'created_at': page.created_at,
         'contributors': json.dumps(
             [contributor.decode('utf-8') for contributor in page.contributors])
     })
