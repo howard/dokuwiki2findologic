@@ -28,6 +28,8 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
             if path.startswith(exclude_path):
                 exclude_page = True
                 break
+        if page.deleted:
+            exclude_page = True
         if not exclude_page:
             pages.append(page)
 

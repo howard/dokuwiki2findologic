@@ -20,6 +20,7 @@ class Page(object):
             this to False.
         """
         self._text = None
+        self._changes = None
         self.path = path
         self._lazy_load = lazy_load_content
         self._base_dir = dokuwiki_base_dir
@@ -35,6 +36,7 @@ class Page(object):
             self.purge_text()
         else:
             self._text = self._load_text()
+            self._load_changes()
 
     def purge_text(self):
         """
@@ -53,6 +55,22 @@ class Page(object):
             self._text = self._load_text()
         return self._text
 
+    @property
+    def deleted(self):
+        """
+        Checks the history of a page to see if it was deleted in its last
+        change. Pre-installed pages may not have a history, so they are assumed
+        to not have been deleted.
+
+        :return: True if the page is currently deleted.
+        """
+        if self._changes is None and self._lazy_load:
+            self._load_changes()
+        # The last line contains the most recent change. The third column holds
+        # a single character indicator of the change's nature, 'C' for creation,
+        # 'E' for editing, and 'D' for deletion.
+        return len(self._changes) == 0 or self._changes[-1][2] == 'D'
+
     def _load_metadata(self):
         metadata_file_path = self._base_dir + '/data/meta/' + \
                              self.path.replace(':', '/') + '.meta'
@@ -68,6 +86,19 @@ class Page(object):
         self.contributors = self._get_contributors(metadata)
         self.created_at = self._get_create_date(metadata)
         self.updated_at = self._get_modify_date(metadata)
+
+    def _load_changes(self):
+        change_file_path = self._base_dir + '/data/meta/' + \
+                           self.path.replace(':', '/') + '.changes'
+        if not os.path.isfile(change_file_path):
+            # Pages without change history are pre-installed and have not been
+            # deleted yet.
+            self._changes = []
+            return
+
+        with open(change_file_path, 'r') as change_file:
+            raw_changes = change_file.readlines()
+        self._changes = [line.split('\t') for line in raw_changes]
 
     @staticmethod
     def _get_title(metadata):
