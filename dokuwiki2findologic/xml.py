@@ -76,7 +76,7 @@ def add_regular_item_values(item, page):
     add_single_nested_data(item, 'descriptions', 'description', page.text)
 
     date_addeds = etree.SubElement(item, 'dateAddeds')
-    if page.created_at is not None:
+    if page.updated_at is not None:
         # Use the update date instead of the creation date, so search results
         # can be ordered by recency.
         add_child_with_text(date_addeds, 'dateAdded', page.updated_at)
