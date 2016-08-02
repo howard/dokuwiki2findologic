@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import re
 
 import os.path
 import phpserialize
@@ -100,12 +101,40 @@ class Page(object):
             raw_changes = change_file.readlines()
         self._changes = [line.split('\t') for line in raw_changes]
 
-    @staticmethod
-    def _get_title(metadata):
+    def _get_title(self, metadata):
+        """
+        Retrieves the title from metadata. If none exists there, the first
+        heading of the content is used. If that one doesn't exist either, the
+        title is None.
+
+        :param metadata: The metadata file to read.
+        :return: Page title or None.
+        """
         try:
-            return metadata[b'current'].get('title', None)
+            title = metadata[b'current'].get('title', None)
+            if title is None:
+                title = self._extract_title_from_content()
+            return title
         except KeyError:
             return None
+
+    def _extract_title_from_content(self):
+        """
+        Extracts the content of the first heading in the content, to be used as
+        a title. This should be done in case the metadata does not contain it.
+
+        :return: The text of the first heading in the content, or None if no
+            headings are found.
+        """
+        content = self.text.splitlines()
+        title = None
+        for line in content:
+            match_result = re.match('={2,6}(.*?)={2,6}', line)
+            if match_result is not None:
+                title = match_result.group(1).strip()
+                break
+        return title
+
 
     @staticmethod
     def _get_description(metadata):
