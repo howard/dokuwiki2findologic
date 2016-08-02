@@ -39,7 +39,8 @@ def add_unused_item_children(item):
 
 def add_properties(item, properties):
     """
-    Adds the properties provided as a flat dictionary to the item.
+    Adds the properties provided as a flat dictionary to the item. Properties
+    with an empty value are not added for schema conformance.
 
     :param item: The item to add properties to.
     :param properties: The properties to add to the item.
@@ -48,6 +49,9 @@ def add_properties(item, properties):
     props = etree.SubElement(all_properties, 'properties')
 
     for key, value in properties.items():
+        if value is None or len(value) < 1:
+            continue
+
         prop = etree.SubElement(props, 'property')
         prop_key = etree.SubElement(prop, 'key')
         prop_key.text = cdata(key)
