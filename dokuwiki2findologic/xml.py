@@ -2,25 +2,19 @@ import json
 from lxml import etree
 
 
-def cdata(text):
+def stringify(text):
     """
-    Creates a CDATA string that is capable of containing other CDATA blocks that
-    are escaped automatically.
+    Decodes byte arrays to strings, and uses an empty string instead of None,
+    so the values written to the XML file are LXML-compatible, and not "None".
 
-    Can handle bytes, strings and Nones gracefully, always resulting in a
-    CDATA'd string.
-
-    :param text: The text to CDATA-rize.
-    :return: The text wrapped in CDATA tags, with nested CDATA being escaped.
+    :param text: The text to stringify.
+    :return: The sanitized string.
     """
-    # import code
-    # code.interact(local=locals())
     if isinstance(text, bytes):
         text = text.decode('utf-8')
     elif text is None:
         text = ''
-    escaped = text.replace(']]>', ']]&gt;')
-    return etree.CDATA(escaped)
+    return text
 
 
 def add_unused_item_children(item):
@@ -54,9 +48,9 @@ def add_properties(item, properties):
 
         prop = etree.SubElement(props, 'property')
         prop_key = etree.SubElement(prop, 'key')
-        prop_key.text = cdata(key)
+        prop_key.text = stringify(key)
         prop_value = etree.SubElement(prop, 'value')
-        prop_value.text = cdata(value)
+        prop_value.text = stringify(value)
 
 
 def add_regular_item_values(item, page):
@@ -93,7 +87,7 @@ def add_child_with_text(parent, element_name, text):
     :return The generated element.
     """
     child = etree.SubElement(parent, element_name)
-    child.text = cdata(text)
+    child.text = stringify(text)
     return child
 
 
@@ -147,7 +141,7 @@ def add_single_nested_data(item, group_name, element_name, text):
     """
     group = etree.SubElement(item, group_name)
     element = etree.SubElement(group, element_name)
-    element.text = cdata(text)
+    element.text = stringify(text)
     return group
 
 
