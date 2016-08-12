@@ -14,9 +14,11 @@ URL')
               help='Directory to which the XML files should be written.')
 @click.option('--exclude', '-x', multiple=True,
               help='Path prefix of pages that should not be exported.')
+@click.option('--cat-delimiter', '-c', default=':',
+              help='Separator in the page path.')
 @click.argument('dokuwiki_dir', type=click.Path(exists=True))
 def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
-              exclude):
+              exclude, cat_delimiter):
     """Exports DokuWiki content to the FINDOLOGIC XML output format."""
     dokuwiki = DokuWiki(dokuwiki_dir)
 
@@ -37,5 +39,5 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
                            label='Exporting') as bar:
         for offset in range(0, len(pages), pages_per_file):
             write_xml_page(output_dir, pages, offset,
-                           pages_per_file, page_url_prefix,
+                           pages_per_file, page_url_prefix, cat_delimiter,
                            lambda identifier, _: bar.update(identifier))

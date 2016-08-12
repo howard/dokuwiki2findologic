@@ -24,7 +24,6 @@ def add_unused_item_children(item):
     :param item: The XML element corresponding to the item being exported.
     """
     etree.SubElement(item, 'allImages')
-    etree.SubElement(item, 'allAttributes')
     etree.SubElement(item, 'allKeywords')
     etree.SubElement(item, 'salesFrequencies')
     etree.SubElement(item, 'usergroups')
@@ -51,6 +50,23 @@ def add_properties(item, properties):
         prop_key.text = stringify(key)
         prop_value = etree.SubElement(prop, 'value')
         prop_value.text = stringify(value)
+
+
+def add_attributes(item, attributes):
+    all_attributes = etree.SubElement(item, 'allAttributes')
+    attributes_elem = etree.SubElement(all_attributes, 'attributes')
+
+    for key, values in attributes.items():
+        if values is None or len(values) < 1:
+            continue
+
+        attrib = etree.SubElement(attributes_elem, 'attribute')
+        attrib_key = etree.SubElement(attrib, 'key')
+        attrib_key.text = stringify(key)
+        attrib_values = etree.SubElement(attrib, 'values')
+        for value in values:
+            attrib_value = etree.SubElement(attrib_values, 'value')
+            attrib_value.text = stringify(value)
 
 
 def add_regular_item_values(item, page):
@@ -91,7 +107,8 @@ def add_child_with_text(parent, element_name, text):
     return child
 
 
-def create_item_for_page(parent, identifier, page, page_url_prefix):
+def create_item_for_page(parent, identifier, page, page_url_prefix,
+                         cat_delimiter):
     """
     Creates an export item representing a page. Should not be called for pages
     that are excluded from export!
@@ -102,6 +119,8 @@ def create_item_for_page(parent, identifier, page, page_url_prefix):
     :param page: The page to export.
     :param page_url_prefix: The URL prefix to the page, so the exported page
         URLs resolve correctly.
+    :param cat_delimiter Separator used in the page path that is used to split
+        it up to create a hierarchical category attribute.
     :return: The generated item.
     """
     item = etree.SubElement(parent, 'item', id=str(identifier))
@@ -117,6 +136,9 @@ def create_item_for_page(parent, identifier, page, page_url_prefix):
         'created_at': page.created_at,
         'contributors': json.dumps(
             [contributor.decode('utf-8') for contributor in page.contributors])
+    })
+    add_attributes(item, {
+        'cat': ['_'.join(page.path.split(cat_delimiter))]
     })
     add_unused_item_children(item)
     return item
@@ -146,7 +168,7 @@ def add_single_nested_data(item, group_name, element_name, text):
 
 
 def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
-                   on_finish=None):
+                   cat_delimiter, on_finish=None):
     """
     Generates XML export files for a range of DokuWiki pages.
 
@@ -157,6 +179,8 @@ def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
     :param count: Number of pages to write to the XML file.
     :param page_url_prefix: The URL preceding the page's path, so a valid URL
         would result from their concatenation.
+    :param cat_delimiter Separator used in the page path that is used to split
+        it up to create a hierarchical category attribute.
     :param on_finish: Optional function to call once a page has been processed.
     :return:
     """
@@ -167,7 +191,8 @@ def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
                              total=str(len(pages)))
 
     for page in curr_pages:
-        create_item_for_page(items, unique_id, page, page_url_prefix)
+        create_item_for_page(items, unique_id, page, page_url_prefix,
+                             cat_delimiter)
         unique_id += 1
         if on_finish is not None:
             on_finish(unique_id, page)
