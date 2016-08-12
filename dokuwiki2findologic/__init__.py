@@ -16,9 +16,12 @@ URL')
               help='Path prefix of pages that should not be exported.')
 @click.option('--cat-delimiter', '-c', default=':',
               help='Separator in the page path.')
+@click.option('--cat-prefix', '-k', default=None,
+              help='Prefix that is removed from the path before turning it ' +
+                   'into a hierarchical cat value.')
 @click.argument('dokuwiki_dir', type=click.Path(exists=True))
 def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
-              exclude, cat_delimiter):
+              exclude, cat_delimiter, cat_prefix):
     """Exports DokuWiki content to the FINDOLOGIC XML output format."""
     dokuwiki = DokuWiki(dokuwiki_dir)
 
@@ -40,4 +43,5 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
         for offset in range(0, len(pages), pages_per_file):
             write_xml_page(output_dir, pages, offset,
                            pages_per_file, page_url_prefix, cat_delimiter,
+                           cat_prefix,
                            lambda identifier, _: bar.update(identifier))

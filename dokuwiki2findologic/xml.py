@@ -69,6 +69,28 @@ def add_attributes(item, attributes):
             attrib_value.text = stringify(value)
 
 
+def get_category_from_path(path, cat_delimiter, cat_prefix):
+    """
+    Removes an optional prefix from the page path, replaces underscores with
+    spaces, and replaces the cat_delimiter with underscores, so the path results
+    in a hierarchical category name.
+
+    Example: cat_delimiter = ':', cat_prefix = 'foo:':
+        foo:category_name:page -> category name_page
+
+    :param path: The page path to process.
+    :param cat_delimiter: The character separating hierarchy steps in the page
+        path.
+    :param cat_prefix: Optional prefix that is removed from the beginning of the
+        page path before further processing.
+    :return:
+    """
+    if cat_prefix is not None and path.startswith(cat_prefix):
+        path = path[len(cat_prefix):]
+    escaped_path = path.replace('_', ' ')
+    return '_'.join(escaped_path.split(cat_delimiter))
+
+
 def add_regular_item_values(item, page):
     """
     Adds simple, regular values to the item, including the path of the page,
@@ -108,7 +130,7 @@ def add_child_with_text(parent, element_name, text):
 
 
 def create_item_for_page(parent, identifier, page, page_url_prefix,
-                         cat_delimiter):
+                         cat_delimiter, cat_prefix):
     """
     Creates an export item representing a page. Should not be called for pages
     that are excluded from export!
@@ -121,6 +143,8 @@ def create_item_for_page(parent, identifier, page, page_url_prefix,
         URLs resolve correctly.
     :param cat_delimiter Separator used in the page path that is used to split
         it up to create a hierarchical category attribute.
+    :param cat_prefix Path prefix that is removed before the cat value is
+        generated.
     :return: The generated item.
     """
     item = etree.SubElement(parent, 'item', id=str(identifier))
@@ -138,7 +162,7 @@ def create_item_for_page(parent, identifier, page, page_url_prefix,
             [contributor.decode('utf-8') for contributor in page.contributors])
     })
     add_attributes(item, {
-        'cat': ['_'.join(page.path.split(cat_delimiter))]
+        'cat': [get_category_from_path(page.path, cat_delimiter, cat_prefix)]
     })
     add_unused_item_children(item)
     return item
@@ -168,7 +192,7 @@ def add_single_nested_data(item, group_name, element_name, text):
 
 
 def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
-                   cat_delimiter, on_finish=None):
+                   cat_delimiter, cat_prefix, on_finish=None):
     """
     Generates XML export files for a range of DokuWiki pages.
 
@@ -181,6 +205,8 @@ def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
         would result from their concatenation.
     :param cat_delimiter Separator used in the page path that is used to split
         it up to create a hierarchical category attribute.
+    :param cat_prefix Path prefix that is removed before the cat value is
+        generated.
     :param on_finish: Optional function to call once a page has been processed.
     :return:
     """
@@ -192,7 +218,7 @@ def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
 
     for page in curr_pages:
         create_item_for_page(items, unique_id, page, page_url_prefix,
-                             cat_delimiter)
+                             cat_delimiter, cat_prefix)
         unique_id += 1
         if on_finish is not None:
             on_finish(unique_id, page)
