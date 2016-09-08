@@ -1,6 +1,7 @@
 import click
 
 from dokuwiki2findologic.doku import DokuWiki
+from dokuwiki2findologic.usergroup import discover_roles
 from dokuwiki2findologic.xml import write_xml_page
 
 
@@ -19,9 +20,11 @@ URL')
 @click.option('--cat-prefix', '-k', default=None,
               help='Prefix that is removed from the path before turning it ' +
                    'into a hierarchical cat value.')
+@click.option('--usergroup-salt', '-s', default='',
+              help='Salt that is appended to usergroup names before hashing.')
 @click.argument('dokuwiki_dir', type=click.Path(exists=True))
 def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
-              exclude, cat_delimiter, cat_prefix):
+              exclude, cat_delimiter, cat_prefix, usergroup_salt):
     """Exports DokuWiki content to the FINDOLOGIC XML output format."""
     dokuwiki = DokuWiki(dokuwiki_dir)
 
@@ -38,10 +41,13 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
         if not exclude_page:
             pages.append(page)
 
+    # Process roles and visibility.
+    roles = discover_roles(dokuwiki_dir, usergroup_salt)
+
     with click.progressbar(length=len(dokuwiki.pages),
                            label='Exporting') as bar:
         for offset in range(0, len(pages), pages_per_file):
             write_xml_page(output_dir, pages, offset,
                            pages_per_file, page_url_prefix, cat_delimiter,
-                           cat_prefix,
+                           cat_prefix, roles,
                            lambda identifier, _: bar.update(identifier))
