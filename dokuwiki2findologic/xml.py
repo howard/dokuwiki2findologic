@@ -26,7 +26,6 @@ def add_unused_item_children(item):
     etree.SubElement(item, 'allImages')
     etree.SubElement(item, 'allKeywords')
     etree.SubElement(item, 'salesFrequencies')
-    etree.SubElement(item, 'usergroups')
     add_single_nested_data(item, 'prices', 'price', str(0.0))
 
 
@@ -91,6 +90,17 @@ def get_category_from_path(path, cat_delimiter, cat_prefix):
     return '_'.join(escaped_path.split(cat_delimiter))
 
 
+def restrict_visibility(item, page, roles):
+    usergroups = etree.SubElement(item, 'usergroups')
+    anyone_can_access = all(role.can_access(page.path) for role in roles)
+
+    if not anyone_can_access:
+        for role in roles:
+            if role.can_access(item.path):
+                add_child_with_text(usergroups, 'usergroup',
+                                    role.usergroup_hash)
+
+
 def add_regular_item_values(item, page):
     """
     Adds simple, regular values to the item, including the path of the page,
@@ -130,7 +140,7 @@ def add_child_with_text(parent, element_name, text):
 
 
 def create_item_for_page(parent, identifier, page, page_url_prefix,
-                         cat_delimiter, cat_prefix):
+                         cat_delimiter, cat_prefix, roles):
     """
     Creates an export item representing a page. Should not be called for pages
     that are excluded from export!
@@ -145,6 +155,8 @@ def create_item_for_page(parent, identifier, page, page_url_prefix,
         it up to create a hierarchical category attribute.
     :param cat_prefix Path prefix that is removed before the cat value is
         generated.
+    :param roles The roles configured for the selected DokuWiki instance, which
+        are used for usergroup-based visibility restriction.
     :return: The generated item.
     """
     item = etree.SubElement(parent, 'item', id=str(identifier))
@@ -164,6 +176,9 @@ def create_item_for_page(parent, identifier, page, page_url_prefix,
     add_attributes(item, {
         'cat': [get_category_from_path(page.path, cat_delimiter, cat_prefix)]
     })
+
+    restrict_visibility(item, page, roles)
+
     add_unused_item_children(item)
     return item
 
@@ -192,7 +207,7 @@ def add_single_nested_data(item, group_name, element_name, text):
 
 
 def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
-                   cat_delimiter, cat_prefix, on_finish=None):
+                   cat_delimiter, cat_prefix, roles, on_finish=None):
     """
     Generates XML export files for a range of DokuWiki pages.
 
@@ -207,6 +222,8 @@ def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
         it up to create a hierarchical category attribute.
     :param cat_prefix Path prefix that is removed before the cat value is
         generated.
+    :param roles The roles configured for the selected DokuWiki instance, which
+        are used for usergroup-based visibility restriction.
     :param on_finish: Optional function to call once a page has been processed.
     :return:
     """
@@ -218,7 +235,7 @@ def write_xml_page(output_dir, pages, offset, count, page_url_prefix,
 
     for page in curr_pages:
         create_item_for_page(items, unique_id, page, page_url_prefix,
-                             cat_delimiter, cat_prefix)
+                             cat_delimiter, cat_prefix, roles)
         unique_id += 1
         if on_finish is not None:
             on_finish(unique_id, page)
