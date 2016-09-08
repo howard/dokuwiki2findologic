@@ -82,7 +82,7 @@ def get_category_from_path(path, cat_delimiter, cat_prefix):
         path.
     :param cat_prefix: Optional prefix that is removed from the beginning of the
         page path before further processing.
-    :return:
+    :return: A hierarchical category path.
     """
     if cat_prefix is not None and path.startswith(cat_prefix):
         path = path[len(cat_prefix):]
@@ -91,12 +91,20 @@ def get_category_from_path(path, cat_delimiter, cat_prefix):
 
 
 def restrict_visibility(item, page, roles):
+    """
+    Sets usergroup hashes for pages that are not globally visible, based on the
+    ACLs.
+
+    :param item: The item XML element.
+    :param page: The page being processed.
+    :param roles: The roles available in the system.
+    """
     usergroups = etree.SubElement(item, 'usergroups')
     anyone_can_access = all(role.can_access(page.path) for role in roles)
 
     if not anyone_can_access:
         for role in roles:
-            if role.can_access(item.path):
+            if role.can_access(page.path):
                 add_child_with_text(usergroups, 'usergroup',
                                     role.usergroup_hash)
 
