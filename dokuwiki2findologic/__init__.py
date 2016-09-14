@@ -25,15 +25,21 @@ URL')
                    'into a hierarchical cat value.')
 @click.option('--usergroup-salt', '-s', default='',
               help='Salt that is appended to usergroup names before hashing.')
-@click.option('--verbose/--quiet', '-v/-q', default=False,
-              help='Enables debug logging (disabled by default). Verbosity ' +
-                   'disables the progress bar.')
+@click.option('--verbose', '-v', count=True,
+              help='Enables debug logging, with each "v" increasing the log ' +
+                   'level from WARN up to DEBUG.')
 @click.argument('dokuwiki_dir', type=click.Path(exists=True))
 def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
               exclude, cat_delimiter, cat_prefix, usergroup_salt, verbose):
     """Exports DokuWiki content to the FINDOLOGIC XML output format."""
     # Set log level according to verbosity setting.
-    if verbose:
+    if verbose < 1:
+        logger.set_level(logging.ERROR)
+    elif verbose == 1:
+        logger.set_level(logging.WARN)
+    elif verbose == 2:
+        logger.set_level(logging.INFO)
+    else:
         logger.set_level(logging.DEBUG)
 
     dokuwiki = DokuWiki(dokuwiki_dir)
@@ -62,7 +68,7 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
                            lambda identifier, _:
                            bar.update(identifier) if bar is not None else None)
 
-    if verbose:
+    if verbose > 0:
         write_pages()
     else:
         with click.progressbar(length=len(dokuwiki.pages),

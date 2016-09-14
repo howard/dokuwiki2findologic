@@ -109,7 +109,7 @@ def restrict_visibility(item, page, roles):
         logger.debug('Access to %s is restricted.' % page.path)
         for role in roles:
             if role.can_access(page.path):
-                logger.debug('%s can access %s (%s)' % (
+                logger.info('%s can access %s (%s)' % (
                     role.name, page.path, role.usergroup_hash))
                 add_child_with_text(usergroups, 'usergroup',
                                     role.usergroup_hash)
