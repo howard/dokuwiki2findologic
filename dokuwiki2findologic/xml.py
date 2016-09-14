@@ -1,5 +1,8 @@
 import json
+
 from lxml import etree
+
+from dokuwiki2findologic.logger import logger
 
 
 def stringify(text):
@@ -103,10 +106,14 @@ def restrict_visibility(item, page, roles):
     anyone_can_access = all(role.can_access(page.path) for role in roles)
 
     if not anyone_can_access:
+        logger.debug('Access to %s is restricted.' % page.path)
         for role in roles:
             if role.can_access(page.path):
+                logger.debug('%s can access %s (%s)' % (
+                    role.name, page.path, role.usergroup_hash))
                 add_child_with_text(usergroups, 'usergroup',
                                     role.usergroup_hash)
+    logger.debug('Anyone can access %s.' % page.path)
 
 
 def add_regular_item_values(item, page):
