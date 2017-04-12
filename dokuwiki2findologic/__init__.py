@@ -1,3 +1,5 @@
+import logging
+
 import click
 
 from dokuwiki2findologic.doku import DokuWiki
@@ -22,10 +24,23 @@ URL')
                    'into a hierarchical cat value.')
 @click.option('--usergroup-salt', '-s', default='',
               help='Salt that is appended to usergroup names before hashing.')
+@click.option('--verbose', '-v', count=True,
+              help='Enables debug logging, with each "v" increasing the log ' +
+                   'level from WARN up to DEBUG.')
 @click.argument('dokuwiki_dir', type=click.Path(exists=True))
 def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
-              exclude, cat_delimiter, cat_prefix, usergroup_salt):
+              exclude, cat_delimiter, cat_prefix, usergroup_salt, verbose):
     """Exports DokuWiki content to the FINDOLOGIC XML output format."""
+    # Set log level according to verbosity setting.
+    if verbose < 1:
+        logger.set_level(logging.ERROR)
+    elif verbose == 1:
+        logger.set_level(logging.WARN)
+    elif verbose == 2:
+        logger.set_level(logging.INFO)
+    else:
+        logger.set_level(logging.DEBUG)
+
     dokuwiki = DokuWiki(dokuwiki_dir)
 
     # Remove excluded pages.
@@ -44,10 +59,20 @@ def do_export(dokuwiki_dir, page_url_prefix, pages_per_file, output_dir,
     # Process roles and visibility.
     roles = discover_roles(dokuwiki_dir, usergroup_salt)
 
-    with click.progressbar(length=len(dokuwiki.pages),
-                           label='Exporting') as bar:
+    # Process roles and visibility.
+    roles = discover_roles(dokuwiki_dir, usergroup_salt)
+
+    def write_pages(bar=None):
         for offset in range(0, len(pages), pages_per_file):
             write_xml_page(output_dir, pages, offset,
                            pages_per_file, page_url_prefix, cat_delimiter,
                            cat_prefix, roles,
-                           lambda identifier, _: bar.update(identifier))
+                           lambda identifier, _:
+                           bar.update(identifier) if bar is not None else None)
+
+    if verbose > 0:
+        write_pages()
+    else:
+        with click.progressbar(length=len(dokuwiki.pages),
+                               label='Exporting') as progress_bar:
+            write_pages(progress_bar)
